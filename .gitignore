@@ -1,3 +1,4 @@
 saved_models/
 venv/
 .vscode/
+__pycache__/
