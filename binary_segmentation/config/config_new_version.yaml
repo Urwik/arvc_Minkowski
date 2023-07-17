@@ -1,0 +1,50 @@
+train:
+  # DATA PATHS
+  TRAIN_DIR: ARVCTRUSS/train/ply_xyzlabelnormal
+  VALID_DIR: ARVCTRUSS/valid/ply_xyzlabelnormal
+  
+  # IF USE_VALID_DATA set to False TRAIN_DATA will be split using TRAIN_SPLIT
+  USE_VALID_DATA: False
+  
+  # HYPERPARAMETERS
+  EPOCHS: 100
+  BATCH_SIZE: 8
+  INIT_LR: 0.01
+  LR_DECAY: 0.5
+  TRAIN_SPLIT: 0.8
+  
+  # MODEL
+  COORD_IDX: [0,1,2]
+  FEAT_IDX: [0,1,2,4,5,6]
+  LABEL_IDX: 3
+  OUTPUT_CLASSES: 1
+  ACTIVATION_FUNCTION: sigmoid
+  VOXEL_SIZE: 0.05
+  
+  # DATA STUFF
+  NORMALIZE: True
+  BINARY: True
+  ADD_RANGE: False
+  COMPUTE_WEIGHTS: False
+
+  # TRAINING
+  DEVICE: cuda:1 # cuda:X, cpu
+  OPTIMIZER: sgd # adam, sgd
+  LOSS_FN: bceloss # celoss, bceloss  
+
+  THRESHOLD_METHOD: pr # roc, pr, tuning
+  TERMINATION_CRITERIA: loss # loss, precision, f1_score
+  EPOCH_TIMEOUT: 10
+
+  OUTPUT_DIR: saved_models
+
+test:
+  # DATA PATHS
+  TEST_DIR: ARVCTRUSS/test/ply_xyzlabelnormal
+
+  # HYPERPARAMETERS
+  BATCH_SIZE: 1
+
+  # TEST
+  DEVICE: cuda:1
+  SAVE_PRED_CLOUDS: False
