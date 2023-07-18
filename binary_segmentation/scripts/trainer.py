@@ -24,7 +24,7 @@ warnings.filterwarnings('ignore')
 # IMPORTS PATH TO THE PROJECT
 current_model_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 pycharm_projects_path = os.path.dirname(os.path.dirname(current_model_path))
-minkowsky_project_path = os.path.abspath('/home/arvc/PycharmProjects/MinkowskiEngine')
+minkowsky_project_path = os.path.abspath('/home/arvc/Fran/PycharmProjects/MinkowskiEngine')
 
 # IMPORTS PATH TO OTHER PYCHARM PROJECTS
 sys.path.append(current_model_path)
@@ -258,9 +258,6 @@ class Trainer():
             features = features.to(self.device, dtype=torch.float32)
             label = label.to(self.device, dtype=torch.float32)
            
-            print(features.shape)
-
-
             in_field = ME.TensorField(  features= features,
                                         coordinates= coords,
                                         quantization_mode= ME.SparseTensorQuantizationMode.UNWEIGHTED_AVERAGE,
@@ -268,11 +265,11 @@ class Trainer():
                                         device= self.device)
             
             # Forward and Evaluate Model
-            input = in_field.sparse()
+            input = in_field.sparse() #SparseTensorField to SparseTensor
             output = self.model(input)
             pred = output.slice(in_field)
-
             # pred = self.activation_fn(pred)
+            
             prediction = pred.F.squeeze()
 
             # Calulate loss and backpropagate

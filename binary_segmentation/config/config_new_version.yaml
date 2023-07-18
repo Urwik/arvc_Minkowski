@@ -28,7 +28,7 @@ train:
   COMPUTE_WEIGHTS: False
 
   # TRAINING
-  DEVICE: cuda:1 # cuda:X, cpu
+  DEVICE: cuda:0 # cuda:X, cpu
   OPTIMIZER: sgd # adam, sgd
   LOSS_FN: bceloss # celoss, bceloss  
 

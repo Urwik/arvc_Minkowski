@@ -28,7 +28,6 @@ from torch.optim import SGD
 import MinkowskiEngine as ME
 
 from MinkowskiEngine.modules.resnet_block import BasicBlock, Bottleneck
-
 from examples.resnet import ResNetBase
 
 
@@ -127,28 +126,28 @@ class MinkUNetBase(ResNetBase):
         out = self.conv0p1s1(x)
         out = self.bn0(out)
         out_p1 = self.relu(out)
-        print(9)
+        
         out = self.conv1p1s2(out_p1)
         out = self.bn1(out)
         out = self.relu(out)
         out_b1p2 = self.block1(out)
-        print(8)
+        
         out = self.conv2p2s2(out_b1p2)
         out = self.bn2(out)
         out = self.relu(out)
         out_b2p4 = self.block2(out)
-        print(7)
+        
         out = self.conv3p4s2(out_b2p4)
         out = self.bn3(out)
         out = self.relu(out)
         out_b3p8 = self.block3(out)
-        print(6)
+        
         # tensor_stride=16
         out = self.conv4p8s2(out_b3p8)
         out = self.bn4(out)
         out = self.relu(out)
         out = self.block4(out)
-        print(5)
+        
         # tensor_stride=8
         out = self.convtr4p16s2(out)
         out = self.bntr4(out)
@@ -156,7 +155,7 @@ class MinkUNetBase(ResNetBase):
 
         out = ME.cat(out, out_b3p8)
         out = self.block5(out)
-        print(4)
+        
         # tensor_stride=4
         out = self.convtr5p8s2(out)
         out = self.bntr5(out)
@@ -164,7 +163,7 @@ class MinkUNetBase(ResNetBase):
 
         out = ME.cat(out, out_b2p4)
         out = self.block6(out)
-        print(3)
+        
         # tensor_stride=2
         out = self.convtr6p4s2(out)
         out = self.bntr6(out)
@@ -172,7 +171,7 @@ class MinkUNetBase(ResNetBase):
 
         out = ME.cat(out, out_b1p2)
         out = self.block7(out)
-        print(2)
+        
         # tensor_stride=1
         out = self.convtr7p2s2(out)
         out = self.bntr7(out)
@@ -181,7 +180,8 @@ class MinkUNetBase(ResNetBase):
         out = ME.cat(out, out_p1)
         out = self.block8(out)
         out = self.final(out)
-        print(1)
+        
+        # print("OUt type and shape: ", type(out), out.shape)
         return self.sigmoid(out)
         # return out
 
