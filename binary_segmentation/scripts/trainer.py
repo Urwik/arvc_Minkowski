@@ -24,7 +24,7 @@ warnings.filterwarnings('ignore')
 # IMPORTS PATH TO THE PROJECT
 current_model_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 pycharm_projects_path = os.path.dirname(os.path.dirname(current_model_path))
-minkowsky_project_path = os.path.abspath('/home/arvc/PycharmProjects/MinkowskiEngine')
+minkowsky_project_path = os.path.abspath('/home/arvc/Fran/PycharmProjects/MinkowskiEngine')
 
 # IMPORTS PATH TO OTHER PYCHARM PROJECTS
 sys.path.append(current_model_path)
@@ -66,7 +66,8 @@ class Trainer():
         self.set_device()
         self.set_model()
         self.set_optimizer()
-
+        self.set_scheduler()
+        print(self.lr_scheduler)
 
 
     def make_outputdir(self):
@@ -178,8 +179,6 @@ class Trainer():
         
         else:   
             self.lr_scheduler = None
-
-        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=4, gamma=0.9)
 
 
     def save_global_results(self):
@@ -367,9 +366,9 @@ class Trainer():
 
     def update_learning_rate(self):
         if self.configuration.train.lr_scheduler == "step":
-            self.scheduler.step()
+            self.lr_scheduler.step()
         elif self.configuration.train.lr_scheduler == "plateau":
-            self.scheduler.step(self.valid_avg_loss)
+            self.lr_scheduler.step(self.valid_avg_loss)
 
 
 class Results:
