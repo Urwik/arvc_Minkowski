@@ -24,7 +24,7 @@ warnings.filterwarnings('ignore')
 # IMPORTS PATH TO THE PROJECT
 current_model_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 pycharm_projects_path = os.path.dirname(os.path.dirname(current_model_path))
-minkowsky_project_path = os.path.abspath('/home/arvc/Fran/PycharmProjects/MinkowskiEngine')
+minkowsky_project_path = os.path.abspath('/home/arvc/PycharmProjects/MinkowskiEngine')
 
 # IMPORTS PATH TO OTHER PYCHARM PROJECTS
 sys.path.append(current_model_path)
@@ -170,6 +170,15 @@ class Trainer():
 
 
     def set_scheduler(self):
+        if self.configuration.train.lr_scheduler == "step":
+            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=2, gamma=0.1, verbose=True)
+
+        elif self.configuration.train.lr_scheduler == "plateau":
+            self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=5, threshold=0.0001, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-08, verbose=True)
+        
+        else:   
+            self.lr_scheduler = None
+
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=4, gamma=0.9)
 
 
@@ -191,6 +200,14 @@ class Trainer():
         self.global_valid_results.recall.append(self.valid_results.recall)
         self.global_valid_results.conf_matrix.append(self.valid_results.conf_matrix)
         self.global_valid_results.threshold.append(self.valid_results.threshold)
+
+
+    def compute_mean_valid_results(self):
+        self.valid_avg_loss = np.mean(self.valid_results.loss)
+        self.valid_avg_f1 = np.mean(self.valid_results.f1)
+        self.valid_avg_precision = np.mean(self.valid_results.precision)
+        self.valid_avg_recall = np.mean(self.valid_results.recall)
+        self.valid_avg_threshold = np.mean(self.valid_results.threshold)
 
 
     def termination_criteria(self):
@@ -334,18 +351,25 @@ class Trainer():
                         f'  [Avg Recall score: {avg_rec:.4f}]')
 
         self.add_to_global_results()
+        self.compute_mean_valid_results()
 
     def get_learning_rate(self):
         for param_group in self.optimizer.param_groups:
             return param_group['lr']
 
 
-    def update_learning_rate(self):
+    def update_learning_rate_custom(self):
         prev_lr = self.get_learning_rate()
         for g in self.optimizer.param_groups:
             g['lr'] = ( prev_lr / 10)
 
         # self.scheduler.step()
+
+    def update_learning_rate(self):
+        if self.configuration.train.lr_scheduler == "step":
+            self.scheduler.step()
+        elif self.configuration.train.lr_scheduler == "plateau":
+            self.scheduler.step(self.valid_avg_loss)
 
 
 class Results:
@@ -401,8 +425,7 @@ if __name__ == '__main__':
             if trainer.termination_criteria():
                 break
 
-            # print(f'Actual LR: {trainer.get_learning_rate()}')
-            # trainer.update_learning_rate()
+            trainer.update_learning_rate()
 
             print('-'*50 + '\n' + 'DURATION:' + '\n' + '-'*50)
             epoch_end_time = datetime.now()
