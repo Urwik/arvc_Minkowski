@@ -67,7 +67,6 @@ class Trainer():
         self.set_model()
         self.set_optimizer()
         self.set_scheduler()
-        print(self.lr_scheduler)
 
 
     def make_outputdir(self):
@@ -113,7 +112,7 @@ class Trainer():
                                             _add_range=self.configuration.train.add_range,   
                                             _voxel_size=self.configuration.train.voxel_size)
 
-        self.train_dataset.dataset_size = 10
+        self.train_dataset.dataset_size = 50
 
         if self.configuration.train.use_valid_data:
             self.valid_dataset= MinkDataset(_mode='train',
@@ -172,10 +171,10 @@ class Trainer():
 
     def set_scheduler(self):
         if self.configuration.train.lr_scheduler == "step":
-            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=2, gamma=0.1, verbose=True)
+            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=2, gamma=0.1, verbose=False)
 
         elif self.configuration.train.lr_scheduler == "plateau":
-            self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=5, threshold=0.0001, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-08, verbose=True)
+            self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=5, threshold=0.0001, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-08, verbose=False)
         
         else:   
             self.lr_scheduler = None
@@ -296,7 +295,7 @@ class Trainer():
             # Print training progress
             current_clouds += features.size(0)
             if batch % 1 == 0 or features.size(0) < self.train_dataloader.batch_size:  # print every (% X) batches
-                print(f' - [Batch: {current_clouds}/{len(self.train_dataloader.dataset)}],'
+                print(f' - [Batch: {batch + 1 }/{ len(self.train_dataloader.dataset) / self.train_dataloader.batch_size}],'
                     f' / Train Loss: {avg_train_loss_:.4f}')
 
 
@@ -329,8 +328,9 @@ class Trainer():
 
                 # Calulate loss and backpropagate
                 avg_loss = self.configuration.train.loss_fn(prediction, label)
-                self.valid_results.loss.append(avg_loss)
+                self.valid_results.loss.append(avg_loss.detach().cpu())
 
+                # Compute metrics
                 trshld, pred_fix, avg_f1, avg_pre, avg_rec, conf_m = validation_metrics(label, prediction)
 
                 self.valid_results.threshold.append(trshld)
@@ -367,6 +367,7 @@ class Trainer():
     def update_learning_rate(self):
         if self.configuration.train.lr_scheduler == "step":
             self.lr_scheduler.step()
+
         elif self.configuration.train.lr_scheduler == "plateau":
             self.lr_scheduler.step(self.valid_avg_loss)
 
@@ -411,11 +412,10 @@ if __name__ == '__main__':
 
         trainer.best_value = 1 if config.train.termination_criteria == "loss" else 0
 
-
         for epoch in range(config.train.epochs):
-            print(f"EPOCH: {epoch} {'-' * 50}")
+            print()
+            print(f"EPOCH: {epoch} | LR: {trainer.optimizer.param_groups[0]['lr']} {'-' * 30}") 
             epoch_start_time = datetime.now()
-
 
             trainer.train() 
             trainer.valid()

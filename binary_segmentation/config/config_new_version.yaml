@@ -8,7 +8,7 @@ train:
   
   # HYPERPARAMETERS
   EPOCHS: 100
-  BATCH_SIZE: 8
+  BATCH_SIZE: 4
   INIT_LR: 0.01
   LR_DECAY: 0.5
   TRAIN_SPLIT: 0.8
@@ -31,7 +31,7 @@ train:
   DEVICE: cuda:0 # cuda:X, cpu
   OPTIMIZER: sgd # adam, sgd
   LOSS_FN: bceloss # celoss, bceloss
-  LR_SCHEDULER: step # step, plateau  
+  LR_SCHEDULER: plateau # step, plateau  
 
   THRESHOLD_METHOD: pr # roc, pr, tuning
   TERMINATION_CRITERIA: loss # loss, precision, f1_score
