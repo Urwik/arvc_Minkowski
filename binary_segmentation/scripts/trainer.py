@@ -36,6 +36,7 @@ from arvc_Utils.Metrics import validation_metrics
 from arvc_Utils.Config import Config as cfg
 from model.minkunet import MinkUNet34C
 
+from arvc_Utils.Utils import bcolors
 # ----------------------------------------------------------------------------------- #
 
 
@@ -112,7 +113,7 @@ class Trainer():
                                             _add_range=self.configuration.train.add_range,   
                                             _voxel_size=self.configuration.train.voxel_size)
 
-        self.train_dataset.dataset_size = 50
+        self.train_dataset.dataset_size = 100
 
         if self.configuration.train.use_valid_data:
             self.valid_dataset= MinkDataset(_mode='train',
@@ -192,20 +193,21 @@ class Trainer():
     
 
     def add_to_global_results(self):
-        self.global_valid_results.loss.append(self.valid_results.loss)
-        self.global_valid_results.f1.append(self.valid_results.f1)
-        self.global_valid_results.precision.append(self.valid_results.precision)
-        self.global_valid_results.recall.append(self.valid_results.recall)
-        self.global_valid_results.conf_matrix.append(self.valid_results.conf_matrix)
-        self.global_valid_results.threshold.append(self.valid_results.threshold)
+        self.global_valid_results.loss.append(self.valid_avg_loss)
+        self.global_valid_results.f1.append(self.valid_avg_f1)
+        self.global_valid_results.precision.append(self.valid_avg_precision)
+        self.global_valid_results.recall.append(self.valid_avg_recall)
+        self.global_valid_results.conf_matrix.append(self.valid_avg_cm)
+        self.global_valid_results.threshold.append(self.valid_avg_threshold)
 
 
     def compute_mean_valid_results(self):
-        self.valid_avg_loss = np.mean(self.valid_results.loss)
-        self.valid_avg_f1 = np.mean(self.valid_results.f1)
-        self.valid_avg_precision = np.mean(self.valid_results.precision)
-        self.valid_avg_recall = np.mean(self.valid_results.recall)
-        self.valid_avg_threshold = np.mean(self.valid_results.threshold)
+        self.valid_avg_loss = float(np.mean(self.valid_results.loss))
+        self.valid_avg_f1 = float(np.mean(self.valid_results.f1))
+        self.valid_avg_precision = float(np.mean(self.valid_results.precision))
+        self.valid_avg_recall = float(np.mean(self.valid_results.recall))
+        self.valid_avg_threshold = float(np.mean(self.valid_results.threshold))
+        self.valid_avg_cm = np.mean(self.valid_results.conf_matrix, axis=0)
 
 
     def termination_criteria(self):
@@ -218,7 +220,7 @@ class Trainer():
     def improved_results(self):
         # LOSS
         if self.configuration.train.termination_criteria == "loss":
-            self.last_value = np.mean(self.valid_results.loss).__float__()
+            self.last_value = self.valid_avg_loss
 
             if self.last_value < self.best_value:
                 return True
@@ -227,7 +229,7 @@ class Trainer():
 
         # PRECISION    
         elif self.configuration.train.termination_criteria == "precision":
-            self.last_value = np.mean(self.valid_results.precision).__float__()
+            self.last_value = self.valid_avg_precision
             
             if self.last_value > self.best_value:
                 return True
@@ -236,7 +238,7 @@ class Trainer():
 
         # F1 SCORE    
         elif self.configuration.train.termination_criteria == "f1_score":
-            self.last_value = np.mean(self.valid_results.f1).__float__()
+            self.last_value = self.valid_avg_f1
             
             if self.last_value > self.best_value:
                 return True
@@ -254,6 +256,8 @@ class Trainer():
             torch.save(self.model.state_dict(), self.output_dir + f'/best_model.pth')
             self.best_value = self.last_value
             self.epoch_timeout_count = 0
+            print('-'*50)
+            print(f"{bcolors.GREEN} NEW MODEL SAVED {bcolors.ENDC} WITH PRECISION: {bcolors.GREEN}{self.valid_avg_precision:.4f}{bcolors.ENDC}")
             return True
         else:
             self.epoch_timeout_count += 1
@@ -295,7 +299,7 @@ class Trainer():
             # Print training progress
             current_clouds += features.size(0)
             if batch % 1 == 0 or features.size(0) < self.train_dataloader.batch_size:  # print every (% X) batches
-                print(f' - [Batch: {batch + 1 }/{ len(self.train_dataloader.dataset) / self.train_dataloader.batch_size}],'
+                print(f' - [Batch: {batch + 1 }/{ int(len(self.train_dataloader.dataset) / self.train_dataloader.batch_size)}],'
                     f' / Train Loss: {avg_train_loss_:.4f}')
 
 
@@ -333,6 +337,8 @@ class Trainer():
                 # Compute metrics
                 trshld, pred_fix, avg_f1, avg_pre, avg_rec, conf_m = validation_metrics(label, prediction)
 
+                print(f'Threshold: {trshld:.5f}')
+
                 self.valid_results.threshold.append(trshld)
                 self.valid_results.f1.append(avg_f1)
                 self.valid_results.precision.append(avg_pre)
@@ -342,15 +348,15 @@ class Trainer():
 
                 current_clouds += features.size(0)
 
-                if batch % 10 == 0 or features.size()[0] < self.valid_dataloader.batch_size:  # print every 10 batches
-                    print(f'[Batch: {current_clouds}/{len(self.valid_dataloader.dataset)}]'
-                        f'  [Avg Loss: {avg_loss:.4f}]'
-                        f'  [Avg F1 score: {avg_f1:.4f}]'
-                        f'  [Avg Precision score: {avg_pre:.4f}]'
-                        f'  [Avg Recall score: {avg_rec:.4f}]')
+                if batch % 1 == 0 or features.size()[0] < self.valid_dataloader.batch_size:  # print every 10 batches
+                    print(f'[Batch: {batch +1 }/{ int(len(self.valid_dataloader.dataset) / self.valid_dataloader.batch_size)}]'
+                        f'  [Precision: {avg_pre:.4f}]'
+                        f'  [Loss: {avg_loss:.4f}]'
+                        f'  [F1: {avg_f1:.4f}]'
+                        f'  [Recall: {avg_rec:.4f}]')
 
-        self.add_to_global_results()
         self.compute_mean_valid_results()
+        self.add_to_global_results()
 
     def get_learning_rate(self):
         for param_group in self.optimizer.param_groups:
@@ -414,7 +420,7 @@ if __name__ == '__main__':
 
         for epoch in range(config.train.epochs):
             print()
-            print(f"EPOCH: {epoch} | LR: {trainer.optimizer.param_groups[0]['lr']} {'-' * 30}") 
+            print(f"{bcolors.GREEN} EPOCH: {epoch} {bcolors.ENDC}| LR: {trainer.optimizer.param_groups[0]['lr']} {'-' * 30}") 
             epoch_start_time = datetime.now()
 
             trainer.train() 
@@ -426,12 +432,10 @@ if __name__ == '__main__':
 
             trainer.update_learning_rate()
 
-            print('-'*50 + '\n' + 'DURATION:' + '\n' + '-'*50)
             epoch_end_time = datetime.now()
-            print('Epoch Duration: {}'.format(epoch_end_time-epoch_start_time))
+            print('-'*50); print(f'EPOCH DURATION: {bcolors.ORANGE} {epoch_end_time-epoch_start_time}{bcolors.ENDC}'); print('-'*50); print('\n')
 
 
         trainer.save_global_results()
-        training_end_time = datetime.now()
-        print('Total Training Duration: {}'.format(training_end_time-training_start_time))
-        print("Training Done!")
+        print('\n'); print('-'*50);print(f'{bcolors.GREEN}TRAINING DONE!{bcolors.ENDC}') 
+        print(f'TOTAL TRAINING DURATION: {bcolors.ORANGE} {datetime.now()-training_start_time}{bcolors.ENDC}'); print('-'*50); print('\n')
