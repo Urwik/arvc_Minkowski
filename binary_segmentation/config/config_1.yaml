@@ -7,9 +7,9 @@ train:
   USE_VALID_DATA: False
   
   # HYPERPARAMETERS
-  EPOCHS: 100
-  BATCH_SIZE: 4
-  INIT_LR: 0.01
+  EPOCHS: 500
+  BATCH_SIZE: 16
+  INIT_LR: 0.05
   LR_DECAY: 0.5
   TRAIN_SPLIT: 0.8
   
@@ -29,8 +29,8 @@ train:
   COMPUTE_WEIGHTS: False
 
   # TRAINING
-  DEVICE: cuda:0 # cuda:X, cpu
-  OPTIMIZER: sgd # adam, sgd
+  DEVICE: cuda:1 # cuda:X, cpu
+  OPTIMIZER: adam # adam, sgd
   LOSS_FN: bceloss # celoss, bceloss
   LR_SCHEDULER: plateau # step, plateau  
 
