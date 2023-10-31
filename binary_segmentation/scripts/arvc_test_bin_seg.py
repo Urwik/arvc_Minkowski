@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
+import time
 import csv
 from torch.utils.data import DataLoader
 import torch
@@ -160,7 +161,7 @@ def get_exported_results():
 def export_results(f1_score_, precision_, recall_, tp_, fp_, tn_, fn_):
     csv_file = os.path.join(current_model_path, 'results.csv')
 
-    data_list = [MODEL_DIR, FEATURES, config["train"]["LOSS"], config["train"]["TERMINATION_CRITERIA"],
+    data_list = [MODEL_DIR, FEATURES, VOXEL_SIZE, config["train"]["LOSS"], config["train"]["TERMINATION_CRITERIA"],
                  config["train"]["THRESHOLD_METHOD"], config["train"]["USE_VALID_DATA"],
                  precision_, recall_, f1_score_, tp_, fp_, tn_, fn_]
 
@@ -174,35 +175,35 @@ if __name__ == '__main__':
     start_time = datetime.now()
 
     # --------------------------------------------------------------------------------------------#
-    # REMOVE MODELS THAT ARE ALREADY EXPORTED
-    exported_models = get_exported_results()
-    models_list = os.listdir(os.path.join(current_model_path, 'saved_models'))
-    for exported_model in exported_models:
-        models_list.remove(str(exported_model))
+    # REMOVE MODELS THAT ARE ALREADY TESTED
+    # exported_models = get_exported_results()
+    # models_list = os.listdir(os.path.join(current_model_path, 'saved_models'))
+    # for exported_model in exported_models:
+    #     models_list.remove(str(exported_model))
 
-    # models_list = ['bs_xyz_bce_vt_loss']
+    # REWRITE MODELS TO TEST
+    models_list = ['230310174515']
 
+    # FOR EACH MODEL
     for MODEL_DIR in models_list:
         print(f'Testing Model: {MODEL_DIR}')
 
         MODEL_PATH = os.path.join(current_model_path, 'saved_models', MODEL_DIR)
-
         config_file_abs_path = os.path.join(MODEL_PATH, 'config.yaml')
         with open(config_file_abs_path) as file:
             config = yaml.safe_load(file)
 
-        # DATASET
-        TEST_DIR= config["test"]["TEST_DIR"]
-        FEATURES= config["train"]["FEATURES"]
+        # PARSE CONFIG ARGS
+        TEST_DIR = 'ARVCTRUSS/unique_cloud' #config["test"]["TEST_DIR"]
+        FEATURES = config["train"]["FEATURES"]
         VOXEL_SIZE = config["train"]["VOXEL_SIZE"]
-        LABELS= config["train"]["LABELS"]
-        NORMALIZE= config["train"]["NORMALIZE"]
-        BINARY= config["train"]["BINARY"]
-        # DEVICE= config["test"]["DEVICE"]
-        DEVICE= "cuda:3"
-        BATCH_SIZE= 1
-        OUTPUT_CLASSES= config["train"]["OUTPUT_CLASSES"]
-        SAVE_PRED_CLOUDS= config["test"]["SAVE_PRED_CLOUDS"]
+        LABELS = config["train"]["LABELS"]
+        NORMALIZE = config["train"]["NORMALIZE"]
+        BINARY = config["train"]["BINARY"]
+        DEVICE = "cuda:0"    # config["test"]["DEVICE"]
+        BATCH_SIZE = 1
+        OUTPUT_CLASSES = config["train"]["OUTPUT_CLASSES"]
+        SAVE_PRED_CLOUDS = True #config["test"]["SAVE_PRED_CLOUDS"]
 
         # --------------------------------------------------------------------------------------------#
         # CHANGE PATH DEPENDING ON MACHINE
@@ -257,7 +258,7 @@ if __name__ == '__main__':
         #---------------------------------------------------------------------------------------------#
         # MAKE DIR WHERE TO SAVE THE CLOUDS
         if SAVE_PRED_CLOUDS:
-            PRED_CLOUDS_DIR = os.path.join(MODEL_PATH, "pred_clouds")
+            PRED_CLOUDS_DIR = os.path.join(MODEL_PATH, "Unique_pred_clouds")
             if not os.path.exists(PRED_CLOUDS_DIR):
                 os.makedirs(PRED_CLOUDS_DIR)
 
@@ -269,11 +270,15 @@ if __name__ == '__main__':
 
         print('-'*50)
         print('TESTING ON: ', device)
+        start_time = time.time()
         results = test(device_=device,
                        dataloader_=test_dataloader,
                        model_=model,
                        loss_fn_=loss_fn)
 
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print('Model: ', MODEL_DIR, ' Inf. Time: ', elapsed_time)
         f1_score = np.array(results[1])
         precision = np.array(results[2])
         recall = np.array(results[3])

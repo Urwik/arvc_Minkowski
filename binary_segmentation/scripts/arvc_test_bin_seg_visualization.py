@@ -145,7 +145,7 @@ if __name__ == '__main__':
         NORMALIZE= config["train"]["NORMALIZE"]
         BINARY= config["train"]["BINARY"]
         # DEVICE= config["test"]["DEVICE"]
-        DEVICE= "cuda:3"
+        DEVICE= "cuda:0"
         BATCH_SIZE= 1
         OUTPUT_CLASSES= config["train"]["OUTPUT_CLASSES"]
         SAVE_PRED_CLOUDS= True

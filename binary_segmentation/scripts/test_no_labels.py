@@ -174,7 +174,7 @@ if __name__ == '__main__':
         #---------------------------------------------------------------------------------------------#
         # MAKE DIR WHERE TO SAVE THE CLOUDS
         if SAVE_PRED_CLOUDS:
-            PRED_CLOUDS_DIR = os.path.join(MODEL_PATH, "test_ouster_clouds")
+            PRED_CLOUDS_DIR = os.path.join(MODEL_PATH, "test_threshold_clouds")
             if not os.path.exists(PRED_CLOUDS_DIR):
                 os.makedirs(PRED_CLOUDS_DIR)
 
@@ -183,7 +183,9 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load(os.path.join(MODEL_PATH, 'best_model.pth'), map_location=device))
         threshold = np.load(MODEL_PATH + f'/threshold.npy')
         THRESHOLD = np.mean(threshold[-1])
+        print(f'THRESHOLD: {THRESHOLD:.4f}')
 
+        THRESHOLD = 0.9999
         print('-'*50)
         print('TESTING ON: ', device)
         results = test(device_=device,
