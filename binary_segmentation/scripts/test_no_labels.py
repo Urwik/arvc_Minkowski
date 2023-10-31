@@ -1,10 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
-<<<<<<< HEAD
-=======
 import open3d as o3d
->>>>>>> 9c26233 (First Commit)
 import csv
 from torch.utils.data import DataLoader
 import torch
@@ -29,7 +26,7 @@ sys.path.append(pycharm_projects_path)
 sys.path.append(minkowsky_project_path)
 
 
-from arvc_Utils.Datasets import vis_minkDataset
+from arvc_Utils.Datasets import minkDataset
 from arvc_Utils.pointcloudUtils import np2ply
 from model.minkunet import MinkUNet34C
 
@@ -39,26 +36,16 @@ def test(device_, dataloader_, model_, loss_fn_):
     # TEST
     model_.eval()
     f1_lst, pre_lst, rec_lst, loss_lst, conf_m_lst, trshld_lst = [], [], [], [], [], []
-    current_clouds = 0
 
     with torch.no_grad():
-        for batch, (coords, features, label) in enumerate(dataloader_):
+        for batch, (coords, features) in enumerate(dataloader_):
 
             coords = coords.to(device_, dtype=torch.float32)
             features = features.to(device_, dtype=torch.float32)
-            label = label.to(device_, dtype=torch.float32)
-<<<<<<< HEAD
-
-
-            in_field = ME.TensorField(
-                features= features,
-                coordinates= (coords / VOXEL_SIZE),
-=======
             
             in_field = ME.TensorField(
                 features= features,
                 coordinates= coords,
->>>>>>> 9c26233 (First Commit)
                 quantization_mode=ME.SparseTensorQuantizationMode.UNWEIGHTED_AVERAGE,
                 minkowski_algorithm=ME.MinkowskiAlgorithm.SPEED_OPTIMIZED,
                 device=device_)
@@ -67,52 +54,16 @@ def test(device_, dataloader_, model_, loss_fn_):
             input = in_field.sparse()
             output = model_(input)
             pred = output.slice(in_field)
+            pred_prob = pred.F.squeeze()
+            pred_prob = pred_prob.detach().cpu().numpy()
+            pred_lbl = np.where(pred_prob >= THRESHOLD, 1, 0).astype(int)
 
-            prediction = pred.F.squeeze()
-            avg_loss = loss_fn_(prediction, label)
-            loss_lst.append(avg_loss.item())
-
-            pred_fix, avg_f1, avg_pre, avg_rec, conf_m = compute_metrics(label, prediction)
-            f1_lst.append(avg_f1)
-            pre_lst.append(avg_pre)
-            rec_lst.append(avg_rec)
-            conf_m_lst.append(conf_m)
+            filename = os.path.basename(FILES_LIST[batch])[:-4]
 
             if SAVE_PRED_CLOUDS:
-<<<<<<< HEAD
-                print(f'Filename: {FILES_LIST[batch][-9:-4]}')
-                save_pred_as_ply(coords[:, 1:], pred_fix, PRED_CLOUDS_DIR, FILES_LIST[batch][-9:-4])
-=======
-                save_pred_as_ply(features[:, 0:3], pred_fix, PRED_CLOUDS_DIR, FILES_LIST[batch][-9:-4])
+                save_pred_as_ply(features[:, 0:3], pred_lbl, PRED_CLOUDS_DIR, filename_=filename)
 
->>>>>>> 9c26233 (First Commit)
-
-            # current_clouds += features.size(0)
-
-            # if batch % 10 == 0 or features.size()[0] < dataloader_.batch_size:  # print every 10 batches
-            #     print(f'  [Batch: {batch}/{len(dataloader_)}]'
-            #           f'  [Loss: {avg_loss:.4f}]'
-            #           f'  [Precision: {avg_pre:.4f}]'
-            #           f'  [Recall: {avg_rec:.4f}'
-            #           f'  [F1 score: {avg_f1:.4f}]')
-
-    return loss_lst, f1_lst, pre_lst, rec_lst, conf_m_lst
-
-
-
-def compute_metrics(label_, pred_):
-
-    pred = pred_.cpu().numpy()
-    label = label_.cpu().numpy().astype(int)
-    pred = np.where(pred > THRESHOLD, 1, 0).astype(int)
-
-    f1_score = metrics.f1_score(label, pred, average='binary')
-    precision_ = metrics.precision_score(label, pred)
-    recall_ = metrics.recall_score(label, pred)
-    tn, fp, fn, tp = metrics.confusion_matrix(label, pred, labels=[0,1]).ravel()
-
-
-    return pred, f1_score, precision_, recall_, (tn, fp, fn, tp )
+    return FILES_LIST[batch][-9:-4]
 
 
 def save_pred_as_ply(coords_, pred_fix_, out_dir_, filename_):
@@ -121,27 +72,9 @@ def save_pred_as_ply(coords_, pred_fix_, out_dir_, filename_):
     
     coords_ = coords_.detach().cpu().numpy()
     pred_fix_ = pred_fix_[:,None]
-<<<<<<< HEAD
-
-    cloud = np.hstack((coords_, pred_fix_))
-    print(f'Out_dir: {out_dir_}')
-    print(f'Filename: {filename_}')
-
-
-=======
     
     cloud = np.hstack((coords_, pred_fix_))
->>>>>>> 9c26233 (First Commit)
     np2ply(cloud, out_dir_, filename_, features=feat_xyzlabel, binary=True)
-
-
-def get_extend_clouds():
-    csv_file = os.path.join(MODEL_PATH, 'representative_clouds.csv')
-    df = pd.read_csv(csv_file)
-    extended_clouds_ = df.iloc[0].tolist()
-    extended_clouds_ = np.unique(extended_clouds_).tolist()
-
-    return extended_clouds_
 
 
 if __name__ == '__main__':
@@ -151,11 +84,7 @@ if __name__ == '__main__':
     # REMOVE MODELS THAT ARE ALREADY EXPORTED
     models_list = os.listdir(os.path.join(current_model_path, 'saved_models'))
 
-<<<<<<< HEAD
-    # models_list = ['bs_xyz_bce_vt_loss']
-=======
     # models_list = ['230308141518']
->>>>>>> 9c26233 (First Commit)
 
     for MODEL_DIR in models_list:
         print(f'Testing Model: {MODEL_DIR}')
@@ -167,13 +96,14 @@ if __name__ == '__main__':
             config = yaml.safe_load(file)
 
         # DATASET
-        TEST_DIR= "ARVCTRUSS/test/ply_xyzlabelnormal"
+        TEST_DIR= "ARVCOUSTER/ply_xyznormal"
         FEATURES= config["train"]["FEATURES"]
-<<<<<<< HEAD
-        VOXEL_SIZE = config["train"]["VOXEL_SIZE"]
-=======
+        if FEATURES == [0,1,2,4,5,6]:
+            FEATURES = [0,1,2,3,4,5]
+        elif FEATURES == [0,1,2,7]:
+            FEATURES = [0,1,2,6]
+
         VOXEL_SIZE = 0.05 #config["train"]["VOXEL_SIZE"]
->>>>>>> 9c26233 (First Commit)
         LABELS= config["train"]["LABELS"]
         NORMALIZE= config["train"]["NORMALIZE"]
         BINARY= config["train"]["BINARY"]
@@ -188,11 +118,9 @@ if __name__ == '__main__':
         machine_name = socket.gethostname()
         if machine_name == 'arvc-Desktop':
             TEST_DATA = os.path.join('/media/arvc/data/datasets', TEST_DIR)
-            VIS_DATA = os.path.join('/media/arvc/data/datasets', 'ARVCTRUSS/test_visualization/ply_xyzlabelnormal')
 
         else:
             TEST_DATA = os.path.join('/home/arvc/Fran/data/datasets', TEST_DIR)
-            VIS_DATA = os.path.join('/home/arvc/Fran/data/datasets', 'ARVCTRUSS/test_visualization/ply_xyzlabelnormal')
 
         
         # --------------------------------------------------------------------------------------------#
@@ -210,21 +138,17 @@ if __name__ == '__main__':
 
         # --------------------------------------------------------------------------------------------#
         # INSTANCE DATASET
-        dataset = vis_minkDataset(
+        dataset = minkDataset(
+            mode_ = 'test_no_labels',
             root_dir = TEST_DATA,
-            common_clouds_dir = VIS_DATA,
-            extend_clouds = [],
             features= FEATURES,
-            labels = LABELS,
+            labels = [],
             normalize = NORMALIZE,
             binary = BINARY,
-<<<<<<< HEAD
-            compute_weights=False)
-=======
             voxel_size_=VOXEL_SIZE)
->>>>>>> 9c26233 (First Commit)
 
         FILES_LIST = dataset.dataset.copy()
+
         #---------------------------------------------------------------------------------------------#
         # INSTANCE DATALOADER
         test_dataloader = DataLoader(
@@ -235,11 +159,7 @@ if __name__ == '__main__':
             pin_memory=True,
             drop_last=False,
             collate_fn=ME.utils.batch_sparse_collate)
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> 9c26233 (First Commit)
         #---------------------------------------------------------------------------------------------#
         # SELECT DEVICE TO WORK WITH
         if torch.cuda.is_available():
@@ -254,7 +174,7 @@ if __name__ == '__main__':
         #---------------------------------------------------------------------------------------------#
         # MAKE DIR WHERE TO SAVE THE CLOUDS
         if SAVE_PRED_CLOUDS:
-            PRED_CLOUDS_DIR = os.path.join(MODEL_PATH, "vis_clouds")
+            PRED_CLOUDS_DIR = os.path.join(MODEL_PATH, "test_ouster_clouds")
             if not os.path.exists(PRED_CLOUDS_DIR):
                 os.makedirs(PRED_CLOUDS_DIR)
 
@@ -271,22 +191,4 @@ if __name__ == '__main__':
                        model_=model,
                        loss_fn_=loss_fn)
 
-        f1_score = np.array(results[1])
-        precision = np.array(results[2])
-        recall = np.array(results[3])
-        confusion_matrix_list = np.array(results[4])
-        mean_cf = np.mean(confusion_matrix_list, axis=0)
-        median_cf = np.median(confusion_matrix_list, axis=0)
-        mean_tp, mean_fp, mean_tn, mean_fn = mean_cf[3], mean_cf[1], mean_cf[0], mean_cf[2]
-        med_tp, med_fp, med_tn, med_fn = median_cf[3], median_cf[1], median_cf[0], median_cf[2]
-        # files_list = results[5]
-
-
-        print('\n\n')
-        print(f'Threshold: {THRESHOLD}')
-        print(f'[Mean F1_score:  {np.mean(f1_score)}] [Median F1_score:  {np.median(f1_score)}]')
-        print(f'[Mean Precision: {np.mean(precision)}] [Median Precision: {np.median(precision)}]')
-        print(f'[Mean Recall:    {np.mean(recall)}] [Median Recall:    {np.median(recall)}]')
-        print(f'[Mean TP: {mean_tp}, FP: {mean_fp}, TN: {mean_tn}, FN: {mean_fn}] '
-              f'[Median TP: {med_tp}, FP: {med_fp}, TN: {med_tn}, FN: {med_fn}]')
         print("Done!")

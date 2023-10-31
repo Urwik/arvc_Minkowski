@@ -25,3 +25,30 @@ test:
   DEVICE: cuda:1
   BATCH_SIZE: 1
   SAVE_PRED_CLOUDS: False
+train:
+  TRAIN_DIR: ARVCTRUSS/train/ply_xyzlabelnormal
+  VALID_DIR: ARVCTRUSS/valid/ply_xyzlabelnormal
+  # IF USE_VALID_DATA set to False TRAIN_DATA will be split using TRAIN_SPLIT
+  USE_VALID_DATA: False
+  VOXEL_SIZE: 0.1
+  FEATURES: [0,1,2,4,5,6]
+  BATCH_SIZE: 16
+  EPOCHS: 100
+  EPOCH_TIMEOUT: 10
+  TERMINATION_CRITERIA: loss # loss, precision, f1_score
+  DEVICE: cuda:3 # cuda:X, cpu
+  OUTPUT_DIR: saved_models
+  TRAIN_SPLIT: 0.8
+  LABELS: 3
+  NORMALIZE: True
+  BINARY: True
+  LR: 0.01
+  OUTPUT_CLASSES: 1
+  THRESHOLD_METHOD: pr # roc, pr, tuning
+  LOSS: BCELoss
+
+test:
+  TEST_DIR: ARVCTRUSS/test/ply_xyzlabelnormal
+  DEVICE: cuda:1
+  BATCH_SIZE: 1
+  SAVE_PRED_CLOUDS: False

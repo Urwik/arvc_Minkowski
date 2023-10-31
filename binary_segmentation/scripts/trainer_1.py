@@ -106,8 +106,7 @@ class Trainer():
         self.train_dataset = MinkDataset(   _mode='train',
                                             _root_dir= self.train_abs_path,
                                             _coord_idx= self.configuration.train.coord_idx,
-                                            _feat_idx=self.configuration.train.feat_idx,
-                                            _feat_ones=self.configuration.train.feat_ones, 
+                                            _feat_idx=self.configuration.train.feat_idx, 
                                             _label_idx=self.configuration.train.label_idx,
                                             _normalize=self.configuration.train.normalize,
                                             _binary=self.configuration.train.binary, 
@@ -121,7 +120,6 @@ class Trainer():
                                             _root_dir=self.valid_abs_path,
                                             _coord_idx=self.configuration.train.coord_idx,
                                             _feat_idx=self.configuration.train.feat_idx, 
-                                            _feat_ones=self.configuration.train.feat_ones,
                                             _label_idx=self.configuration.train.label_idx,
                                             _normalize=self.configuration.train.normalize,
                                             _binary=self.configuration.train.binary, 
@@ -404,8 +402,10 @@ def get_config(_config_file):
 
 if __name__ == '__main__':
 
+    torch.cuda.set_device(1)
+
     # Files = os.listdir(os.path.join(current_model_path, 'config'))
-    Files = ['config_0.yaml']
+    Files = ['config_1.yaml']
     for configFile in Files:
         training_start_time = datetime.now()
 
