@@ -2,3 +2,4 @@ saved_models/
 __pycache__/
 .idea/
 results.csv
+.vscode/
