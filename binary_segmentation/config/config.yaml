@@ -22,6 +22,6 @@ train:
 
 test:
   TEST_DIR: ARVCTRUSS/test/ply_xyzlabelnormal
-  DEVICE: cuda:1
+  DEVICE: cuda:0
   BATCH_SIZE: 1
   SAVE_PRED_CLOUDS: False

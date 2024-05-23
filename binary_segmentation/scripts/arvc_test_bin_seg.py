@@ -18,7 +18,12 @@ warnings.filterwarnings('ignore')
 # IMPORTS PATH TO THE PROJECT
 current_model_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 pycharm_projects_path = os.path.dirname(os.path.dirname(current_model_path))
-minkowsky_project_path = os.path.abspath('/home/arvc/Antonio/virtual_environments/trav_analysis/MinkowskiEngine')
+
+if socket.gethostname() == 'arvc-fran':
+    minkowsky_project_path = os.path.abspath('/home/arvc/workSpaces/nn_ws/external_repos/MinkowskiEngine')
+else:
+    minkowsky_project_path = os.path.abspath('/home/arvc/Fran/workSpaces/nn_ws/external_repos/MinkowskiEngine')
+
 
 # IMPORTS PATH TO OTHER PYCHARM PROJECTS
 sys.path.append(current_model_path)
@@ -29,7 +34,6 @@ sys.path.append(minkowsky_project_path)
 from arvc_Utils.Datasets import minkDataset
 from arvc_Utils.pointcloudUtils import np2ply
 from model.minkunet import MinkUNet34C
-
 
 
 def test(device_, dataloader_, model_, loss_fn_):
